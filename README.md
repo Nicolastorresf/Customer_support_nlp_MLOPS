@@ -1,33 +1,7 @@
-# Proyecto de Clasificación de Tweets de Atención al Cliente para Nequi
-
-## Descripción del Proyecto
-
-Este proyecto implementa un pipeline de Machine Learning para clasificar tweets de un canal de atención al cliente. El objetivo es tomar mensajes de usuarios, procesarlos y asignarlos a categorías predefinidas (o descubiertas) para facilitar su gestión y análisis. La solución está diseñada como un sistema batch, enfocándose en buenas prácticas de ingeniería de ML y MLOps, tal como se describe en la prueba técnica para Ingeniero de Machine Learning de Nequi.
-
-El pipeline cubre desde la ingesta y preprocesamiento de datos, pasando por la ingeniería de características (generación de embeddings y reducción de dimensionalidad), el pseudo-etiquetado mediante clustering, hasta el entrenamiento y evaluación de un modelo de clasificación supervisado.
-
-## Dataset Utilizado
-
-* **Nombre:** Customer Support on Twitter
-* **Fuente:** Kaggle
-* **Slug del Dataset en Kaggle:** `thoughtvector/customer-support-on-twitter`
-* **Archivo Principal:** `twcs.csv`
-* **Características Clave:** Contiene más de 2 millones de tweets de interacciones entre clientes y diversas marcas en Twitter. Para este proyecto, se filtra para trabajar con aproximadamente 1.6 millones de tweets de clientes (`inbound=True`).
-
-## Estructura de Carpetas del Proyecto
-
-¡Excelente! Ahora que tu código está en GitHub y has resuelto los problemas técnicos principales, podemos enfocarnos en la documentación, específicamente en el README.md.
-
-Un README.md completo y claro es fundamental para que cualquier persona (incluyendo los evaluadores de Nequi) pueda entender tu proyecto, replicar tus resultados y comprender tus decisiones.
-
-Aquí te proporciono una plantilla muy completa para tu README.md. Copia y pega esto en tu archivo README.md en la raíz de tu proyecto y luego personaliza las secciones marcadas con [TU ...] o donde necesites añadir detalles específicos de tu implementación.
-
-Markdown
-
-# Proyecto: Clasificación de Tweets de Atención al Cliente (Prueba Técnica Nequi)
+# Proyecto: Clasificación de Tweets de Atención al Cliente 
 
 ## Autor
-* **Nombre:** [TU NOMBRE COMPLETO AQUÍ]
+* **Nombre:** Nicolas Torres
 * **Fecha:** Mayo 2025
 
 ## Descripción del Proyecto
@@ -42,13 +16,14 @@ El pipeline ha sido desarrollado en Python y utiliza diversas librerías estánd
 
 * **Nombre del Dataset:** Customer Support on Twitter
 * **Fuente:** Kaggle
-* **URL/Slug en Kaggle:** `thoughtvector/customer-support-on-twitter`
+* **URL/Slug en Kaggle:** `thoughtvector/customer-support-on-twitter`,'https://www.kaggle.com/datasets/thoughtvector/customer-support-on-twitter' 
 * **Archivo Principal en el Dataset:** `twcs.csv`
 * **Descripción Breve:** Este dataset público contiene más de 2 millones de tweets que representan interacciones entre clientes y múltiples compañías a través de Twitter.
 * **Filtrado Aplicado:** Para este proyecto, el dataset se filtra inicialmente para incluir únicamente los tweets entrantes de clientes (`inbound=True`), resultando en un conjunto de trabajo de aproximadamente 1.6 millones de registros, los cuales se dividen luego en conjuntos de `discovery` (entrenamiento), `validation` y `evaluation`.
 
 ## Estructura de Carpetas del Proyecto
 
+```text
 customer_support_nlp_MLOPS/
 ├── data/                     # Datos (IGNORADOS POR GIT gracias a .gitignore)
 │   ├── 00_raw/               # Dataset crudo original (ej. twcs.csv)
@@ -64,14 +39,14 @@ customer_support_nlp_MLOPS/
 │   ├── PROPUESTA_CI_CD_CT.md
 │   ├── PROPUESTA_CALIDAD_VERSIONADO.md
 │   └── PROPUESTA_MONITOREO_SEGURIDAD.md
-├── models/                   # Modelos serializados y reportes (IGNORADOS POR GIT)
+├── models/                   # Modelos serializados y reportes 
 │   ├── classification/       # Modelos de clasificación, encoders, reportes, análisis de errores
-│   ├── clustering/           # Modelos KMeans ajustados (ej. discovery_kmeans_model_k8.joblib)
-│   └── feature_reduction/    # Modelos PCA ajustados (ej. pca_model_fitted.joblib)
+│   ├── clustering/           # Modelos KMeans ajustados 
+│   └── feature_reduction/    # Modelos PCA ajustados 
 ├── notebooks/                # Jupyter notebooks para experimentación y análisis exploratorio
 │   └── Clustering_Experimentation.ipynb
 ├── src/                      # Código fuente del pipeline de ML
-│   ├── init.py
+│   ├── __init__.py
 │   ├── all_emoticons_expanded.py # Módulo de utilidad para emojis
 │   ├── chat_words.py         # Módulo de utilidad para abreviaturas de chat
 │   ├── clustering.py         # Lógica de clustering (KMeans) y pseudo-etiquetado
@@ -82,7 +57,6 @@ customer_support_nlp_MLOPS/
 │   ├── model_training.py     # Script para entrenamiento y evaluación del modelo de clasificación
 │   └── preprocessing.py      # Script para limpieza y preprocesamiento de texto NLP
 ├── .gitignore                # Especifica los archivos y directorios a ignorar por Git
-├── LICENSE                   # (Opcional, ej. MIT License)
 ├── README.md                 # Este archivo
 └── requirements.txt          # Dependencias del proyecto Python
 ## Prerrequisitos
