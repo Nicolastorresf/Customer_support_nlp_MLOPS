@@ -1,0 +1,47 @@
+# Ignorar todos los archivos de datos generados y modelos
+data/00_raw/*
+data/01_ingested_splits/*
+data/02_prepared_data/*
+data/03_preprocessed_text/*
+data/04_features/*
+data/05_clustering_outputs/*
+data/06_pseudo_labelled_data/*
+models/feature_reduction/*
+models/clustering/*
+models/classification/*
+
+# Ignorar archivos específicos si están en la raíz de 'models' o 'data'
+# (ajusta si tienes otras subcarpetas o archivos específicos que se creen ahí)
+models/*.joblib
+models/*.txt 
+
+# Ignorar logs si los guardas en una carpeta específica
+logs/
+*.log
+
+# Ignorar archivos de caché de Python
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Ignorar entornos virtuales (ej. si usas venv o conda localmente)
+.venv/
+venv/
+env/
+*.env
+
+# Ignorar archivos específicos de IDEs (opcional, pero buena práctica)
+.vscode/
+.idea/
+*.DS_Store
+
+# Ignorar archivos de caché de Jupyter Notebooks
+.ipynb_checkpoints/
+
+git reset HEAD -- data/
+git reset HEAD -- models/
+# (y cualquier otra carpeta/archivo que ahora esté ignorado pero fue añadido al stage)
+
+# Luego, dile a Git que deje de rastrearlos (pero mantenlos en tu disco):
+git rm -r --cached data/
+git rm -r --cached models/
