@@ -59,8 +59,7 @@ customer_support_nlp_MLOPS/
 ├── .gitignore                # Especifica los archivos y directorios a ignorar por Git
 ├── README.md                 # Este archivo
 └── requirements.txt          # Dependencias del proyecto Python
-
-## Prerrequisitos
+## Prerrequisitos```
 
 * Python 3.10 (o la versión que estés usando)
 * Git
@@ -85,7 +84,7 @@ Una vez clonado el repositorio y con el entorno virtual activado (si se usa), in
 
 bash
 pip install -r requirements.txt
-
+````
 ## Configuración
 
 El pipeline es altamente configurable a través del archivo `src/config.py`. Este archivo centraliza:
@@ -169,13 +168,13 @@ Para asegurar la consistencia (especialmente que los modelos de PCA y KMeans se 
 ## Resultados del Modelo de Clasificación
 
 Tras la ejecución completa del pipeline con las configuraciones actuales (Regresión Logística con `C=10.0` y `class_weight='balanced'` según `src/config.py`, sobre embeddings reducidos a 50 dimensiones por PCA), el modelo demostró un rendimiento robusto y consistente:
-
+````
 | Conjunto de Datos       | Accuracy | Macro Avg F1-score | Weighted Avg F1-score |
 |-------------------------|----------|--------------------|-----------------------|
 | Entrenamiento (`discovery`) | ~0.94    | ~0.94              | ~0.94                 |
 | Validación (`validation`)  | ~0.94    | ~0.94              | ~0.94                 |
 | Evaluación (`evaluation`)  | ~0.94    | ~0.94              | ~0.94                 |
-
+````
 El rendimiento es notablemente similar a través de todos los conjuntos, lo que indica una buena capacidad de generalización del modelo y la ausencia de un sobreajuste significativo a los datos de entrenamiento. Esta consistencia subraya la efectividad del pipeline de preprocesamiento, ingeniería de características y pseudo-etiquetado implementado.
 
 Los reportes de clasificación detallados por clase, así como los archivos CSV que contienen un análisis de los errores de clasificación específicos para cada conjunto, se encuentran disponibles en la carpeta `models/classification/` para una inspección más profunda.
