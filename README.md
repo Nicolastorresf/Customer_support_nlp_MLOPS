@@ -59,7 +59,8 @@ customer_support_nlp_MLOPS/
 ├── .gitignore                # Especifica los archivos y directorios a ignorar por Git
 ├── README.md                 # Este archivo
 └── requirements.txt          # Dependencias del proyecto Python
-## Prerrequisitos```
+
+## Prerrequisitos
 
 * Python 3.10 (o la versión que estés usando)
 * Git
@@ -82,7 +83,7 @@ customer_support_nlp_MLOPS/
 
 Una vez clonado el repositorio y con el entorno virtual activado (si se usa), instala todas las dependencias necesarias ejecutando el siguiente comando en la raíz del proyecto:
 
-```bash
+bash
 pip install -r requirements.txt
 
 ## Configuración
