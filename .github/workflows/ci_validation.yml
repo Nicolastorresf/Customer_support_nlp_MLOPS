@@ -4,6 +4,7 @@ on:
     branches: [ main ] # O tu rama principal/de desarrollo
   pull_request:
     branches: [ main ] # O tu rama principal/de desarrollo
+  workflow_dispatch:
 jobs:
   lint-and-test:
     runs-on: ubuntu-latest
