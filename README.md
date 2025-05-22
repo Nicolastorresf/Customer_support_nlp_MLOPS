@@ -81,9 +81,8 @@ Este repositorio incluye dos workflows:
 La solución está diseñada para ejecutarse en AWS, con componentes desacoplados y orquestados mediante Step Functions. Soporta inferencia batch, reentrenamiento, trazabilidad de versiones y seguridad avanzada.
 
 > Ver: [`Descripción de la arquitectura`](docs/CLOUD/ARQUITECTURA_NUBE.md)
-> Ver: [`Diagrama de la arquitectura`] (docs/CLOUD/mlops_nlp_aws_architecture.png)
 
-
+> Ver: [Diagrama de la arquitectura](docs/CLOUD/mlops_nlp_aws_architecture.png)
 ---
 
 ## 🧠 Decisiones Técnicas
