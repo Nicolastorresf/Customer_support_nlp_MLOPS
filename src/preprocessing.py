@@ -4,19 +4,19 @@ import pandas as pd
 import re
 import string
 from bs4 import BeautifulSoup
-import nltk # Asegúrate que nltk esté importado
+import nltk
 from nltk.corpus import stopwords as nltk_stopwords
 from nltk.corpus import wordnet
 from nltk.tokenize import word_tokenize
 from nltk.stem import WordNetLemmatizer
 from nltk import pos_tag
-from spellchecker import SpellChecker # pip install pyspellchecker
-from langdetect import detect, LangDetectException, DetectorFactory, detect_langs # pip install langdetect
+from spellchecker import SpellChecker
+from langdetect import detect, LangDetectException, DetectorFactory, detect_langs
 import os
-import emot # pip install emot
+import emot
 import logging
-import argparse # Para argumentos de línea de comandos
-from typing import List, Optional, Dict, Any # Añadido para type hints
+import argparse
+from typing import List, Optional, Dict, Any
 
 # Importar configuraciones y constantes compartidas
 try:
@@ -27,14 +27,43 @@ except ImportError:
 # Configurar logging (una sola vez a través de la función en config)
 config.setup_logging()
 
+# --- Función para asegurar recursos NLTK ---
+def ensure_nltk_resources():
+    """
+    Verifica y descarga los recursos de NLTK necesarios definidos en config.py.
+    Debe ser llamada una vez al inicio del script.
+    """
+    logging.info("Verificando y descargando recursos NLTK necesarios...")
+    if hasattr(config, 'NLTK_RESOURCES_NEEDED') and isinstance(config.NLTK_RESOURCES_NEEDED, dict):
+        for resource_path_nltk, resource_name_nltk in config.NLTK_RESOURCES_NEEDED.items():
+            try:
+                nltk.data.find(resource_path_nltk)
+                logging.info(f"Recurso NLTK '{resource_name_nltk}' ya se encuentra.")
+            except LookupError:
+                logging.info(f"Recurso NLTK '{resource_name_nltk}' no encontrado. Intentando descarga...")
+                try:
+                    nltk.download(resource_name_nltk, quiet=False)
+                    logging.info(f"Recurso NLTK '{resource_name_nltk}' descargado exitosamente.")
+                except Exception as e_download:
+                    logging.error(f"Fallo al descargar el recurso NLTK '{resource_name_nltk}': {e_download}")
+            except Exception as e_find:
+                logging.error(f"Error inesperado verificando el recurso NLTK '{resource_name_nltk}': {e_find}")
+    else:
+        logging.warning("config.NLTK_RESOURCES_NEEDED no está definido en config.py o no es un diccionario. "
+                        "No se descargarán recursos NLTK automáticamente. Esto podría causar errores más adelante.")
+    logging.info("Verificación de recursos NLTK completada.")
+
+# --- Llamar a la función de descarga de NLTK inmediatamente ---
+ensure_nltk_resources()
+
 # --- Configuración Global y Semillas ---
-DetectorFactory.seed = 0 # Para reproducibilidad de langdetect
+DetectorFactory.seed = 0
 SCRIPT_START_TIME = pd.Timestamp.now(tz='America/Bogota')
 logging.info(f"Script de Preprocesamiento Multilingüe Iniciado a las {SCRIPT_START_TIME} (Control por config.py)")
 
 # --- Carga de Recursos Lingüísticos Externos ---
 try:
-    from chat_words import ALL_CHAT_WORDS_MAP 
+    from chat_words import ALL_CHAT_WORDS_MAP
     logging.info(f"Mapas de chat words cargados para {len(ALL_CHAT_WORDS_MAP)} idiomas desde '{config.CHAT_WORDS_FILE}'.")
 except ImportError as e:
     logging.warning(f"ADVERTENCIA: No se pudo cargar ALL_CHAT_WORDS_MAP desde '{config.CHAT_WORDS_FILE}': {e}. Usando valores por defecto.")
@@ -56,9 +85,9 @@ for lang_code_default in config.LANG_MAP.keys():
         ALL_EMOTICONS_EXPANDED[lang_code_default] = {}
 
 # --- Inicialización de Herramientas y Recursos Pre-cargados ---
-emot_analyzer = emot.emot() 
+emot_analyzer = emot.emot()
 lemmatizer = WordNetLemmatizer()
-SPELL_CHECKERS_CACHE: Dict[str, Optional[SpellChecker]] = {} 
+SPELL_CHECKERS_CACHE: Dict[str, Optional[SpellChecker]] = {}
 
 ALL_STOPWORDS_SETS: Dict[str, set] = {}
 for lang_code, details in config.LANG_MAP.items():
@@ -66,24 +95,19 @@ for lang_code, details in config.LANG_MAP.items():
     if nltk_stop_name:
         try:
             ALL_STOPWORDS_SETS[lang_code] = set(nltk_stopwords.words(nltk_stop_name))
+            logging.info(f"Stopwords de NLTK para '{lang_code}' ('{nltk_stop_name}') cargadas exitosamente.")
         except LookupError:
-            logging.warning(f"Stopwords de NLTK para '{lang_code}' ('{nltk_stop_name}') no encontradas. Intentando descarga.")
-            try: 
-                nltk.download(nltk_stop_name, quiet=True)
-                ALL_STOPWORDS_SETS[lang_code] = set(nltk_stopwords.words(nltk_stop_name))
-                logging.info(f"Stopwords para '{nltk_stop_name}' descargadas y cargadas.")
-            except Exception as e_download:
-                logging.error(f"Error descargando stopwords para '{nltk_stop_name}': {e_download}. Stopwords no disponibles.")
-                ALL_STOPWORDS_SETS[lang_code] = set()
+            logging.error(f"Stopwords de NLTK para '{lang_code}' ('{nltk_stop_name}') NO SE ENCONTRARON dentro del corpus 'stopwords' de NLTK. "
+                          f"Verifica que '{nltk_stop_name}' sea un idioma con stopwords disponibles en NLTK. Se usará un conjunto vacío.")
+            ALL_STOPWORDS_SETS[lang_code] = set()
         except Exception as e_load:
-            logging.error(f"Error cargando stopwords para '{lang_code}': {e_load}. Stopwords no disponibles.")
+            logging.error(f"Error inesperado al cargar stopwords para '{lang_code}' ('{nltk_stop_name}'): {e_load}. Se usará un conjunto vacío.")
             ALL_STOPWORDS_SETS[lang_code] = set()
     else:
         ALL_STOPWORDS_SETS[lang_code] = set()
 logging.info(f"Stopwords (o intento) cargadas para {len(ALL_STOPWORDS_SETS)} idiomas.")
 
 # --- Definiciones de Funciones de Limpieza ---
-
 def remove_html_content(text_with_html: str) -> str:
     if isinstance(text_with_html, str) and '<' in text_with_html and '>' in text_with_html:
         try:
@@ -229,32 +253,40 @@ def correct_spellings_adaptive(text_to_correct: str, lang_code_to_use: str, spel
         logging.error(f"Error en correct_spellings_adaptive: {e}. Texto: '{text_to_correct[:50]}...'. Devolviendo texto original.")
         return text_to_correct
 
-def get_wordnet_pos_adaptive(word: str, lang_code_to_use: str) -> str: # wordnet POS tag
-    if lang_code_to_use == 'en':
+def get_wordnet_pos_adaptive(word: str, lang_code_to_use: str) -> str:
+    if lang_code_to_use == 'en': # WordNet POS tagging es más robusto para inglés en NLTK
         try:
             tag = pos_tag([word])[0][1][0].upper()
             tag_dict = {"J": wordnet.ADJ, "N": wordnet.NOUN, "V": wordnet.VERB, "R": wordnet.ADV}
-            return tag_dict.get(tag, wordnet.NOUN)
-        except LookupError:
+            return tag_dict.get(tag, wordnet.NOUN) # Default a NOUN si no se reconoce
+        except LookupError: # En caso de que falte 'averaged_perceptron_tagger'
              return wordnet.NOUN
-    return wordnet.NOUN
+    return wordnet.NOUN # Para otros idiomas, o si falla el tagger, default a NOUN
 
 def lemmatize_text_adaptive(text_to_lemmatize: str, lang_code_to_use: str, lemmatizer_instance) -> str:
     lang_details = config.LANG_MAP.get(lang_code_to_use)
-    omw_lang = lang_details.get('omw') if lang_details else None
-    if not omw_lang: return text_to_lemmatize
+    omw_lang = lang_details.get('omw') if lang_details else None # 'omw' es el código de idioma para Open Multilingual Wordnet
+    
+    if not omw_lang: # Si el idioma no tiene un mapeo para OMW, no se puede lematizar con WordNetLemmatizer
+        return text_to_lemmatize
+    
     try:
         words = word_tokenize(text_to_lemmatize)
         lemmatized_words = []
         for w in words:
             pos = get_wordnet_pos_adaptive(w, lang_code_to_use)
             try:
-                lemma = lemmatizer_instance.lemmatize(w, pos=pos)
+                # Para idiomas diferentes al inglés, se debe especificar el 'lang' si el lemmatizer lo soporta y está configurado con OMW
+                if lang_code_to_use != 'en':
+                    lemma = lemmatizer_instance.lemmatize(w, pos=pos, lang=omw_lang)
+                else:
+                    lemma = lemmatizer_instance.lemmatize(w, pos=pos) # Para inglés, lang no es necesario explícitamente
                 lemmatized_words.append(lemma)
-            except Exception: lemmatized_words.append(w)
+            except Exception: # Captura errores específicos de lematización por palabra
+                lemmatized_words.append(w) # Si falla, mantener la palabra original
         return " ".join(lemmatized_words)
-    except LookupError:
-        logging.warning("NLTK: Recursos para lematización podrían faltar. Devolviendo texto original.")
+    except LookupError: # Si falta 'punkt' para word_tokenize o recursos de WordNet/OMW
+        logging.warning("NLTK: Recursos para lematización (punkt, wordnet, omw-1.4) podrían faltar. Devolviendo texto original.")
         return text_to_lemmatize
     except Exception as e:
         logging.error(f"Error en lemmatize_text_adaptive: {e}. Texto: '{text_to_lemmatize[:50]}...'. Devolviendo texto original.")
@@ -287,14 +319,15 @@ def _process_text_row(row: pd.Series,
     if config.PREPROCESSING_REMOVE_PUNCTUATION:
         current_text_for_nlp = remove_punctuation_custom(current_text_for_nlp)
     
+    # Pasos específicos del idioma solo si el idioma es soportado y detectado
     if lang_to_use_for_processing in config.SUPPORTED_LANGS_FOR_SPECIFIC_PROCESSING:
         if config.PREPROCESSING_REMOVE_STOPWORDS:
             current_text_for_nlp = remove_stopwords_adaptive(current_text_for_nlp, lang_to_use_for_processing)
         
-        if enable_spell_correction_flag: # Usar el flag pasado como argumento
+        if enable_spell_correction_flag:
             current_text_for_nlp = correct_spellings_adaptive(current_text_for_nlp, lang_to_use_for_processing, spell_checkers_cache_dict)
         
-        if enable_lemmatization_flag and config.LANG_MAP.get(lang_to_use_for_processing, {}).get('omw'): # Usar el flag
+        if enable_lemmatization_flag and config.LANG_MAP.get(lang_to_use_for_processing, {}).get('omw'):
             current_text_for_nlp = lemmatize_text_adaptive(current_text_for_nlp, lang_to_use_for_processing, lemmatizer_instance)
             
     current_text_for_nlp = remove_extra_spaces(current_text_for_nlp)
@@ -303,7 +336,6 @@ def _process_text_row(row: pd.Series,
 # --- Pipeline Principal de Preprocesamiento ---
 def preprocess_pipeline(df_input: pd.DataFrame, 
                         text_column_name: str = config.COL_TEXT,
-                        # Estos parámetros ahora toman sus valores desde config en el bloque __main__
                         enable_spell_correction_param: bool = False, 
                         enable_lemmatization_param: bool = True) -> pd.DataFrame:
     
@@ -325,17 +357,22 @@ def preprocess_pipeline(df_input: pd.DataFrame,
 
     logging.info("Aplicando procesamiento adaptativo avanzado (controlado por config)...")
     
-    from tqdm.auto import tqdm # Importar tqdm para barras de progreso
-    tqdm.pandas(desc="Preprocesando textos") # Configurar tqdm para pandas
+    try:
+        from tqdm.auto import tqdm 
+        tqdm.pandas(desc="Preprocesando textos") 
+        apply_method = df.progress_apply 
+    except ImportError:
+        logging.info("tqdm no instalado, no se mostrarán barras de progreso para df.apply.")
+        apply_method = df.apply
 
-    df[config.COL_PREPROCESSED_TEXT] = df.progress_apply( # Usar progress_apply
+    df[config.COL_PREPROCESSED_TEXT] = apply_method(
         _process_text_row,
         axis=1,
         emot_analyzer_instance=emot_analyzer,
         lemmatizer_instance=lemmatizer,
         spell_checkers_cache_dict=current_spell_checkers_cache,
-        enable_spell_correction_flag=enable_spell_correction_param, # Pasar el valor del parámetro
-        enable_lemmatization_flag=enable_lemmatization_param    # Pasar el valor del parámetro
+        enable_spell_correction_flag=enable_spell_correction_param,
+        enable_lemmatization_flag=enable_lemmatization_param
     )
     
     df[config.COL_DETECTED_LANGUAGE] = df['detected_language_initial']
@@ -349,22 +386,7 @@ def main_text_preprocessing_pipeline(dataset_type_to_process: str):
     """
     logging.info(f"===== Iniciando Pipeline de Preprocesamiento de Texto para el conjunto: '{dataset_type_to_process}' =====")
 
-    # Verificación y descarga de NLTK resources (solo una vez por ejecución del script)
-    logging.info("Verificando y descargando recursos NLTK necesarios...")
-    for resource_path_nltk, resource_name_nltk in config.NLTK_RESOURCES_NEEDED.items():
-        try:
-            nltk.data.find(resource_path_nltk)
-            logging.info(f"Recurso NLTK '{resource_name_nltk}' ya se encuentra.")
-        except LookupError:
-            logging.info(f"Recurso NLTK '{resource_name_nltk}' no encontrado. Intentando descarga...")
-            try:
-                nltk.download(resource_name_nltk, quiet=False)
-                logging.info(f"Recurso NLTK '{resource_name_nltk}' descargado exitosamente.")
-            except Exception as e_download:
-                logging.error(f"Fallo al descargar el recurso NLTK '{resource_name_nltk}': {e_download}")
-        except Exception as e_find: # Captura otros errores inesperados de nltk.data.find()
-            logging.error(f"Error inesperado verificando el recurso NLTK '{resource_name_nltk}': {e_find}")
-    logging.info("Verificación de recursos NLTK completada.")
+    # La descarga de NLTK ya se hizo al inicio con ensure_nltk_resources()
 
     input_path = config.PREPROCESSING_INPUT_PATHS.get(dataset_type_to_process)
     output_path = config.PREPROCESSED_OUTPUT_PATHS.get(dataset_type_to_process)
@@ -389,7 +411,6 @@ def main_text_preprocessing_pipeline(dataset_type_to_process: str):
             ]
         }
         df_main = pd.DataFrame(data_ejemplo)
-        # Asegurarse de que df_main tenga las columnas esperadas por el resto del pipeline de ejemplo
         if config.COL_TWEET_ID not in df_main.columns and 'text_id' in df_main.columns:
              df_main.rename(columns={'text_id': config.COL_TWEET_ID}, inplace=True)
 
@@ -403,7 +424,6 @@ def main_text_preprocessing_pipeline(dataset_type_to_process: str):
     
     if df_main.empty:
         logging.warning(f"DataFrame para el conjunto '{dataset_type_to_process}' está vacío. No se realizará preprocesamiento.")
-        # Guardar un df vacío con las columnas esperadas
         empty_df_cols = list(df_main.columns) + [config.COL_PREPROCESSED_TEXT, config.COL_DETECTED_LANGUAGE]
         pd.DataFrame(columns=empty_df_cols).to_csv(output_path, index=False, encoding='utf-8')
         logging.info(f"Archivo preprocesado vacío guardado para '{dataset_type_to_process}' en: {output_path}")
@@ -421,7 +441,6 @@ def main_text_preprocessing_pipeline(dataset_type_to_process: str):
         logging.info(f"\n--- Ejemplo de Resultados del Preprocesamiento para '{dataset_type_to_process}' (primeras filas) ---")
         num_examples_to_show = min(len(df_main), 5)
         for i in range(num_examples_to_show):
-            # Usar COL_TWEET_ID de config si existe, sino el text_id del ejemplo
             id_col_name = config.COL_TWEET_ID if config.COL_TWEET_ID in df_main.columns else 'text_id'
             text_id_val = df_main.get(id_col_name, pd.Series(df_main.index, name='text_id_fallback'))[i]
             original_text_val = df_main[config.COL_TEXT].iloc[i]
@@ -471,4 +490,3 @@ if __name__ == "__main__":
     script_end_time = pd.Timestamp.now(tz='America/Bogota')
     logging.info(f"Ejecución completa de src/preprocessing.py Finalizada a las {script_end_time}")
     logging.info(f"Tiempo total de ejecución del script: {script_end_time - SCRIPT_START_TIME}")
-    
