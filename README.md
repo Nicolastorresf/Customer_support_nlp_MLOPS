@@ -84,12 +84,14 @@ customer_support_nlp_MLOPS/
 ***En Windows (Git Bash o CMD/Powershell):**
 
 ```bash
-            nequi_env\Scripts\activate```
-#**En Linux/macOS:**
+            nequi_env\Scripts\activate
+```
+
+***En Linux/macOS:**
 
 ```bash
             source nequi_env/bin/activate
-            ```
+```
 
 ## Instalación de Dependencias
 
