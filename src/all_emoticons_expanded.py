@@ -303,7 +303,7 @@ ALL_EMOTICONS_EXPANDED = {
         ':3': 'cara de gato emoji',
         ':=3': 'cara de gato emoji',
         # Encogerse de Hombros Kaomoji
-        '¯\_(ツ)_/¯': 'persona encogiéndose de hombros emoji', # Kaomoji
+        '¯\\_(ツ)_/¯': 'persona encogiéndose de hombros emoji', # Kaomoji
         # Otros Kaomojis
         '(╯°□°）╯︵ ┻━┻': 'persona tirando la mesa enojada emoji', # Kaomoji
         '┬─┬ノ( º _ ºノ)': 'persona poniendo la mesa educadamente emoji', # Kaomoji
