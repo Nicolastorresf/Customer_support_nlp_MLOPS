@@ -2,19 +2,19 @@
 
 import logging
 
-# Importar el módulo de configuración y configurar el logging primero
+
 try:
     from . import config
-    config.setup_logging() # Configura el logging tan pronto como sea posible
+    config.setup_logging() 
     from . import data_ingestion
     from . import data_preparation
-    from . import preprocessing # Contiene main_text_preprocessing_pipeline
+    from . import preprocessing 
     from . import feature_engineering
     from . import clustering
     from . import model_training
 except ImportError as e:
-    # Este bloque es para ayudar a la ejecución directa del script si las importaciones relativas fallan
-    # y los módulos están en el mismo directorio (lo cual es el caso de src/)
+    
+
     import config
     config.setup_logging()
     import data_ingestion
@@ -94,8 +94,6 @@ def run_pipeline():
             k_for_discovery_training=k_value_for_discovery
         )
 
-        # Para validation y evaluation, se aplica el modelo de discovery y el mapeo de categorías.
-        # No se re-entrena k-means, k_for_discovery_training es None.
         for ds_type in ["validation", "evaluation"]:
             logging.info(f"--- Aplicando clustering y mapeo para: {ds_type} ---")
             clustering.main_clustering_pipeline( #

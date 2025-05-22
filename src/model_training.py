@@ -243,8 +243,6 @@ def evaluate_classification_model(
         logging.info(f"Reporte de clasificación para '{dataset_name}' guardado en: {report_output_path}")
 
         # --- Análisis de Errores ---
-        # Asegurar que los índices de y_data_text y df_full_context_data sean consistentes para iloc
-        # Si fueron reseteados en load_final_data_for_model, esto debería estar bien.
         y_data_text_for_errors = y_data_text.reset_index(drop=True)
         df_context_for_errors = df_full_context_data.reset_index(drop=True)
 

@@ -55,12 +55,6 @@ def prepare_dataset(
 
     if df.empty:
         logging.warning(f"El dataset de entrada {input_csv_path} está vacío. No se realizará la preparación.")
-        # Opcional: guardar un archivo vacío para mantener la consistencia del pipeline
-        # Asegurarse que el directorio de salida exista antes de intentar guardar un archivo vacío
-        # output_dir = os.path.dirname(output_csv_path)
-        # os.makedirs(output_dir, exist_ok=True)
-        # pd.DataFrame(columns=columns_to_keep_after_preparation).to_csv(output_csv_path, index=False, encoding='utf-8')
-        # logging.info(f"Archivo vacío guardado en: {output_csv_path}")
         return True
 
     # --- INICIO DE TRANSFORMACIONES DE PREPARACIÓN ---
@@ -166,10 +160,7 @@ if __name__ == "__main__":
         default='all', # Valor por defecto si no se especifica
         help="Tipo de dataset a procesar. Opciones: 'discovery', 'validation', 'evaluation', 'all' (para procesar todos los definidos en config)."
     )
-    # Podrías añadir más argumentos si fuera necesario, como:
-    # parser.add_argument("--input_file", type=str, help="Ruta al archivo de entrada específico (sobrescribe config).")
-    # parser.add_argument("--output_file", type=str, help="Ruta al archivo de salida específico (sobrescribe config).")
-
+    
     args = parser.parse_args()
     
     # Validaciones de configuración esenciales

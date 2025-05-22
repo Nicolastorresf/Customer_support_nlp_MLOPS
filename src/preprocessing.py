@@ -24,7 +24,7 @@ try:
 except ImportError:
     import config # Si ejecutas directamente el script
 
-# Configurar logging (una sola vez a través de la función en config)
+
 config.setup_logging()
 
 # --- Función para asegurar recursos NLTK ---
@@ -283,9 +283,9 @@ def lemmatize_text_adaptive(text_to_lemmatize: str, lang_code_to_use: str, lemma
                     lemma = lemmatizer_instance.lemmatize(w, pos=pos) # Para inglés, lang no es necesario explícitamente
                 lemmatized_words.append(lemma)
             except Exception: # Captura errores específicos de lematización por palabra
-                lemmatized_words.append(w) # Si falla, mantener la palabra original
+                lemmatized_words.append(w) 
         return " ".join(lemmatized_words)
-    except LookupError: # Si falta 'punkt' para word_tokenize o recursos de WordNet/OMW
+    except LookupError: 
         logging.warning("NLTK: Recursos para lematización (punkt, wordnet, omw-1.4) podrían faltar. Devolviendo texto original.")
         return text_to_lemmatize
     except Exception as e:
