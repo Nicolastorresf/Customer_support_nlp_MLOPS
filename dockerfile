@@ -9,7 +9,7 @@ ENV PYTHONUNBUFFERED 1
 WORKDIR /app
 
 # Copiar el archivo de requerimientos primero para aprovechar el cache de Docker
-COPY requirements.txt .
+COPY requirements.docker.txt requirements.txt
 
 # Instalar las dependencias de Python
 RUN pip install --no-cache-dir -r requirements.txt
@@ -21,11 +21,7 @@ RUN python -m nltk.downloader stopwords punkt wordnet omw-1.4 averaged_perceptro
 # Copiar todo el contenido del proyecto al directorio de trabajo /app
 # Asegúrate de tener un .dockerignore para excluir archivos/carpetas innecesarios (como .git, data/, models/)
 COPY . .
-# Si prefieres copiar selectivamente:
-# COPY src/ ./src/
-# COPY notebooks/ ./notebooks/ # Si algún script los usa, aunque generalmente no para pipelines
-# COPY config.py ./config.py # Si config.py estuviera en la raíz y no en src/
 
+# Definir el script principal que ejecuta todo el pipeline como el punto de entrada.
 
- ENTRYPOINT ["python", "src/run_full_pipeline.py"] 
-# O dejarlo para que se especifique en el comando `docker run` o en GitHub Actions.
+ENTRYPOINT ["python", "src/run_full_pipeline.py"] 

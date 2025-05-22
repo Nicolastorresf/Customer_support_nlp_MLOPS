@@ -195,6 +195,14 @@ python src/model_training.py
 
 El proyecto incluye un Dockerfile para construir una imagen Docker que contiene el pipeline y sus dependencias.
 
+**Puntos Clave del Dockerfile:**
+* Utiliza una imagen base `python:3.12-slim` .
+* Establece el directorio de trabajo en `/app`.
+* **Copia `requirements.docker.txt` como `requirements.txt` dentro del contexto de la build e instala las dependencias desde este archivo. Esto asegura que se instale una versión de PyTorch compatible con CPU, haciendo la imagen más portable.**
+* Pre-descarga los recursos NLTK necesarios.
+* Copia el código del proyecto (la carpeta `src/` y otros archivos necesarios) a la imagen.
+* Define `python src/run_full_pipeline.py` como el `ENTRYPOINT`, por lo que el pipeline completo se ejecuta cuando se inicia un contenedor.
+
 1.**Construir la Imagen:**
 Desde la raíz del proyecto, ejecuta:
 
