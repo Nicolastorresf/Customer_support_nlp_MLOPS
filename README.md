@@ -14,8 +14,8 @@ La solución está diseñada como un sistema batch, con un fuerte énfasis en la
 ## Dataset Utilizado
 
 * **Nombre del Dataset:** Customer Support on Twitter
-* **Fuente:** Kaggle 
-* **URL/Slug en Kaggle:** `thoughtvector/customer-support-on-twitter` (https://www.kaggle.com/datasets/thoughtvector/customer-support-on-twitter) 
+* **Fuente:** Kaggle
+* **URL/Slug en Kaggle:** `thoughtvector/customer-support-on-twitter` (https://www.kaggle.com/datasets/thoughtvector/customer-support-on-twitter)
 * **Archivo Principal en el Dataset:** `twcs.csv`
 * **Descripción Breve:** Este dataset público contiene aproximadamente 3 millones de tweets que representan interacciones entre clientes y múltiples compañías a través de Twitter.
 * **Filtrado Aplicado:** Para este proyecto, el dataset se filtra inicialmente para incluir únicamente los tweets entrantes de clientes (`inbound=True`). Este subconjunto se divide luego en conjuntos de `discovery` (para entrenamiento y ajuste de modelos no supervisados), `validation` y `evaluation`.
@@ -196,7 +196,7 @@ python src/model_training.py
 El proyecto incluye un Dockerfile para construir una imagen Docker que contiene el pipeline y sus dependencias.
 
 **Puntos Clave del Dockerfile:**
-* Utiliza una imagen base `python:3.12-slim` .
+* Utiliza una imagen base `python:3.12-slim`.
 * Establece el directorio de trabajo en `/app`.
 * **Copia `requirements.docker.txt` como `requirements.txt` dentro del contexto de la build e instala las dependencias desde este archivo. Esto asegura que se instale una versión de PyTorch compatible con CPU, haciendo la imagen más portable.**
 * Pre-descarga los recursos NLTK necesarios.
