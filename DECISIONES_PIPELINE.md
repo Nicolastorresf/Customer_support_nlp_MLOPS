@@ -10,7 +10,7 @@ Este documento detalla las decisiones clave tomadas durante el diseño e impleme
     * **Relevancia para el Problema:** Contiene interacciones reales de atención al cliente en Twitter, lo cual es directamente aplicable al caso de uso de Nequi.
     * **Disponibilidad Pública:** Fácilmente accesible y reproducible.
     * **Riqueza de Información:** Incluye metadatos como `inbound` (para filtrar tweets de clientes), `author_id`, y el texto de los tweets, que son útiles para el análisis y preprocesamiento.
-* **Filtrado Inicial:** Se decidió filtrar los datos para quedarse únicamente con los tweets entrantes (`inbound=True`), ya que el objetivo es clasificar los mensajes de los clientes. Esto resultó en aproximadamente 1.6 millones de tweets.
+* **Filtrado Inicial:** Se decidió filtrar los datos para quedarse únicamente con los tweets entrantes (`inbound=True`), ya que el objetivo es clasificar los mensajes de los clientes. Esto resultó en aproximadamente 1.6 millones de tweets antes de la división en conjuntos.
 
 ## 2. Preprocesamiento de Texto (`src/preprocessing.py`)
 
@@ -19,55 +19,51 @@ Se implementó un pipeline de preprocesamiento de texto robusto y multilingüe c
 * **Detección de Idioma:** Se utiliza `langdetect` para identificar el idioma principal de cada tweet. Esto permite aplicar tratamientos específicos (como stopwords y lematización) de forma más precisa. Se manejan casos donde la detección puede fallar o el texto es demasiado corto.
 * **Limpieza Inicial:**
     * **Minúsculas:** Estandarización básica.
-    * **Eliminación de HTML, URLs, Menciones de Twitter (`@usuario`), Hashtags (`#tema`):** Estos elementos suelen ser ruido para la clasificación semántica o pueden ser tratados de forma especial (ej. hashtags como características, aunque en este pipeline se optó por eliminarlos para simplificar el modelo base).
+    * **Eliminación de HTML, URLs, Menciones de Twitter (`@usuario`), Hashtags (`#tema`):** Estos elementos suelen ser ruido para la clasificación semántica.
 * **Manejo de Elementos Específicos del Lenguaje de Chat/Twitter:**
-    * **Expansión de Emojis (`emot` y `all_emoticons_expanded.py`):** Los emojis se convierten a su representación textual (ej. ":)" -> "cara sonriente emoji") para capturar su significado semántico en lugar de tratarlos como caracteres especiales o eliminarlos. Se utiliza un diccionario personalizado para emoticonos textuales comunes.
-    * **Expansión de Abreviaturas de Chat (`chat_words.py`):** Se expanden abreviaturas comunes (ej. "tqm" -> "te quiero mucho") para normalizar el texto.
+    * **Expansión de Emojis (`emot` y `all_emoticons_expanded.py`):** Los emojis se convierten a su representación textual para capturar su significado semántico. Se utiliza un diccionario personalizado para emoticonos textuales.
+    * **Expansión de Abreviaturas de Chat (`chat_words.py`):** Se expanden abreviaturas comunes para normalizar el texto.
 * **Normalización Adicional:**
-    * **Eliminación de Puntuación y Caracteres Especiales:** Se eliminan para reducir la dimensionalidad del vocabulario y enfocarse en las palabras.
-    * **Eliminación de Números:** Se consideró que los números no eran cruciales para las categorías temáticas definidas.
+    * **Eliminación de Puntuación y Caracteres Especiales:** Para reducir la dimensionalidad del vocabulario.
+    * **Eliminación de Números:** Se consideró que no eran cruciales.
     * **Eliminación de Espacios Extra:** Para limpiar el texto.
-* **Corrección Ortográfica (`pyspellchecker`):** Se aplica una corrección ortográfica básica para el idioma detectado. Esto ayuda a agrupar palabras mal escritas con sus formas correctas. Se aplica con cautela para no introducir errores.
-* **Tokenización (`nltk.word_tokenize`):** Divide el texto en palabras individuales (tokens).
-* **Eliminación de Stopwords (`nltk.corpus.stopwords`):** Se eliminan palabras comunes (artículos, preposiciones) que no suelen aportar significado distintivo para la clasificación. Se hace de forma sensible al idioma. (Controlado por `config.PREPROCESSING_REMOVE_STOPWORDS`).
-* **Lematización (`nltk.WordNetLemmatizer` y `pos_tag`):** Reduce las palabras a su forma base o lema (ej. "running" -> "run"). Se prefiere sobre el stemming porque el lema suele ser una palabra real, conservando mejor el significado. Se utiliza `pos_tag` para mejorar la precisión de la lematización.
-* **Manejo de Textos Cortos/Vacíos:** Los textos que quedan vacíos o muy cortos después del preprocesamiento se marcan o manejan para evitar errores en etapas posteriores.
+* **Corrección Ortográfica (`pyspellchecker`):** Aplicada con cautela para el idioma detectado.
+* **Tokenización (`nltk.word_tokenize`):** Divide el texto en palabras.
+* **Eliminación de Stopwords (`nltk.corpus.stopwords`):** Sensible al idioma, controlada por `config.PREPROCESSING_REMOVE_STOPWORDS`.
+* **Lematización (`nltk.WordNetLemmatizer` y `pos_tag`):** Reduce palabras a su forma base, usando `pos_tag` para mejorar precisión.
+* **Manejo de Textos Cortos/Vacíos:** Para evitar errores posteriores.
 
-**Justificación General del Preprocesamiento:** El objetivo era normalizar y limpiar el texto lo máximo posible para reducir el ruido, estandarizar el vocabulario y facilitar que los modelos de embedding y clasificación capturen la semántica subyacente de manera más efectiva.
+**Justificación General del Preprocesamiento:** Normalizar y limpiar el texto para reducir ruido, estandarizar vocabulario y facilitar la captura de semántica por los modelos.
 
 ## 3. Ingeniería de Características (`src/feature_engineering.py`)
 
 * **Embeddings de Sentencias (Sentence Transformers):**
     * **Modelo Seleccionado:** `config.SENTENCE_TRANSFORMER_MODEL` (actualmente `"paraphrase-multilingual-MiniLM-L12-v2"`).
-    * **Justificación:** Se eligió un modelo de Sentence Transformers pre-entrenado y multilingüe porque:
-        * Capturan el significado semántico a nivel de oración/documento, lo cual es más rico que TF-IDF o Word2Vec simple para este tipo de tarea.
-        * El modelo `paraphrase-multilingual-MiniLM-L12-v2` es eficiente y ofrece un buen equilibrio entre rendimiento y tamaño, además de soportar múltiples idiomas presentes en el dataset.
-    * Se generan embeddings para el texto preprocesado de cada tweet.
+    * **Justificación:** Modelo pre-entrenado y multilingüe que captura significado semántico a nivel de oración, eficiente y con buen equilibrio rendimiento/tamaño.
 * **Reducción de Dimensionalidad (PCA):**
     * **Técnica:** Análisis de Componentes Principales (PCA) de `scikit-learn`.
-    * **Número de Componentes (`config.PCA_N_COMPONENTS`):** Se configuró a `50`. Esta elección se basó en [Menciona aquí cómo llegaste a 50. ¿Fue experimentación, un valor común, o revisaste la varianza explicada? Si tienes la varianza explicada por 50 componentes, menciónala. Ej: "Se eligieron 50 componentes, que explicaban aproximadamente X% de la varianza, ofreciendo una reducción significativa de la dimensionalidad manteniendo información relevante."].
-    * **Justificación:** Los embeddings de Sentence Transformers suelen tener una alta dimensionalidad (ej. 384 para MiniLM). PCA se utiliza para:
-        * Reducir el costo computacional de las etapas posteriores (clustering, entrenamiento del clasificador).
-        * Potencialmente eliminar ruido y redundancia en los embeddings.
-        * Mitigar la "maldición de la dimensionalidad".
-    * **Consistencia:** El modelo PCA se ajusta **únicamente** con los embeddings del conjunto `discovery` y luego se guarda. Este mismo modelo ajustado se utiliza para transformar los embeddings de los conjuntos `discovery`, `validation` y `evaluation`, asegurando que todos los datos se proyecten al mismo espacio de características de baja dimensión.
-* **Guardado de Artefactos:**
-    * Se guardan los embeddings completos, los reducidos por PCA y sus IDs correspondientes.
-    * Se guarda el objeto del modelo PCA ajustado (`pca_model_fitted.joblib`) para su uso consistente.
+    * **Número de Componentes (`config.PCA_N_COMPONENTS`):** Configurado a `50`. Esta elección se basó en la necesidad de reducir significativamente la dimensionalidad de los embeddings (originalmente 384D) para mejorar la eficiencia computacional del clustering y el entrenamiento del clasificador, manteniendo al mismo tiempo suficiente información para la separación de clases temáticas. *Si tienes la cifra de varianza explicada del notebook o de la ejecución del pipeline, añádela aquí (ej: "logrando explicar aproximadamente X% de la varianza").*
+    * **Justificación:** Reducir costo computacional, eliminar ruido/redundancia y mitigar la "maldición de la dimensionalidad".
+    * **Consistencia:** El modelo PCA se ajusta **únicamente** con los embeddings del conjunto `discovery` y se guarda, aplicándose luego a todos los conjuntos (`discovery`, `validation`, `evaluation`).
+* **Guardado de Artefactos:** Se guardan embeddings completos, reducidos, IDs y el modelo PCA.
 
 ## 4. Pseudo-Etiquetado mediante Clustering (`src/clustering.py` y `notebooks/Clustering_Experimentation.ipynb`)
 
 Dado que el dataset original no venía con categorías de atención al cliente predefinidas, se optó por un enfoque de pseudo-etiquetado basado en clustering para descubrir estas categorías.
 
 * **Algoritmo de Clustering:** K-Means (`sklearn.cluster.KMeans`).
-    * **Justificación:** Es un algoritmo popular, eficiente para grandes datasets y relativamente fácil de interpretar.
+    * **Justificación:** Popular, eficiente para grandes datasets y relativamente fácil de interpretar.
 * **Determinación del Número de Clústeres (`k`):**
-    * Se realizó un análisis exploratorio en `notebooks/Clustering_Experimentation.ipynb` utilizando los embeddings reducidos del conjunto `discovery`.
-    * Se evaluaron métricas como el **Método del Codo (WCSS)**, el **Coeficiente de Silueta**, el **Índice Calinski-Harabasz** y el **Índice Davies-Bouldin** para un rango de valores de `k` (de 2 a 15).
-    * **Selección de `k=8` (`config.KMEANS_N_CLUSTERS`):** Este valor se eligió porque [Explica brevemente tu razonamiento basado en las métricas. Ej: "mostró un buen 'codo' en la gráfica WCSS, un pico en el Coeficiente de Silueta y una interpretación semántica coherente de los 8 clústeres resultantes."].
+    * Se realizó un análisis exploratorio en `notebooks/Clustering_Experimentation.ipynb` utilizando los embeddings reducidos por PCA (50 dimensiones) del conjunto `discovery`.
+    * Se evaluaron métricas para un rango de `k` (de 5 a 20 según la ejecución del notebook):
+        * **Método del Codo (WCSS - Inertia):** Mostró una disminución progresiva sin un "codo" extremadamente marcado, pero con un cambio de pendiente ligeramente más notorio alrededor de k=8, sugiriendo una disminución en la ganancia marginal de reducción de WCSS a partir de este punto.
+        * **Coeficiente de Silueta (usando distancia coseno, sobre una muestra de 50,000 puntos):** Alcanzó su valor más alto en k=5 (0.1249), pero los valores se mantuvieron razonablemente consistentes y aceptables en la región de k=8 (0.1151) a k=11 (0.1165), antes de mostrar más variabilidad.
+        * **Índice Calinski-Harabasz (sobre una muestra):** El valor más alto se observó en k=5 (2593.22) y descendió consistentemente al aumentar `k`. k=8 (1984.36) representó un punto intermedio en este descenso.
+        * **Índice Davies-Bouldin (menor es mejor, sobre una muestra):** Mostró una tendencia general a disminuir (mejorar) con `k` mayores, alcanzando un mínimo local en k=14 (2.8706). k=8 (3.1758) fue parte de una tendencia descendente respecto a k más bajos como k=5 (3.1343).
+    * **Selección de `k=8` (`config.KMEANS_N_CLUSTERS`):** Este valor se eligió considerando un equilibrio entre las métricas y la necesidad de interpretabilidad semántica para las categorías de atención al cliente. k=8 ofrecía una segmentación razonable donde la WCSS comenzaba a estabilizarse, y las otras métricas, aunque no óptimas individualmente en k=8, eran aceptables en conjunto, evitando una sobresegmentación o una subsegmentación excesiva. La interpretabilidad y el tamaño de los clústeres resultantes también jugaron un papel.
 * **Análisis Cualitativo y Mapeo de Categorías:**
-    * Para cada uno de los 8 clústeres obtenidos del conjunto `discovery`, se generaron palabras clave frecuentes (unigramas y bigramas) y se inspeccionaron tweets de muestra.
-    * Basado en este análisis cualitativo, se asignó manualmente un nombre de categoría descriptivo a cada `cluster_id`. Este mapeo está codificado en la función `define_category_map()` dentro de `src/clustering.py`. Las categorías definidas son:
+    * Para cada uno de los 8 clústeres del conjunto `discovery`, se generaron palabras clave y se inspeccionaron tweets de muestra (como se evidencia en `Clustering_Experimentation.ipynb` y el reporte generado por `src/clustering.py`).
+    * Basado en este análisis, se asignó manualmente un nombre de categoría descriptivo a cada `cluster_id` en la función `define_category_map()` en `src/clustering.py`. Las categorías definidas son:
         * `0: "Consultas_Problemas_Productos_Pedidos"`
         * `1: "Agradecimiento_Cliente"`
         * `2: "Feedback_General_Expresivo_Emojis"`
@@ -76,34 +72,26 @@ Dado que el dataset original no venía con categorías de atención al cliente p
         * `5: "Gestion_Cuentas_Pedidos_Atencion_Cliente"`
         * `6: "Problemas_Consultas_Servicios_Transporte"`
         * `7: "Dialogo_Interaccion_Soporte_General"`
-* **Consistencia del Proceso:**
-    * El modelo KMeans se ajusta **únicamente** con los embeddings reducidos del conjunto `discovery` utilizando `k=8` y se guarda.
-    * Este mismo modelo KMeans ajustado se utiliza para `.predict()` las asignaciones de clúster para los conjuntos `discovery`, `validation` y `evaluation`.
-    * El `define_category_map()` se aplica consistentemente a estas asignaciones para generar los archivos CSV pseudo-etiquetados.
-* **Resultado:** Este proceso genera datasets (`_pseudo_labelled_... .csv`) para entrenamiento, validación y evaluación con una columna de categoría consistente.
+       
+* **Consistencia del Proceso:** El modelo KMeans se ajusta únicamente en `discovery` y se aplica consistentemente a los demás conjuntos.
+* **Resultado:** Generación de datasets pseudo-etiquetados para entrenamiento, validación y evaluación.
 
 ## 5. Modelo de Clasificación (`src/model_training.py`)
 
 * **Algoritmo Seleccionado:** Regresión Logística (`sklearn.linear_model.LogisticRegression`).
-    * **Justificación:**
-        * Cumple con el requisito de un "modelo básico" para la prueba.
-        * Es eficiente para entrenar, interpretable y suele funcionar bien como línea base en problemas de clasificación de texto con buenas características.
-        * Es robusto y fácil de desplegar.
+    * **Justificación:** Cumple con el requisito de "modelo básico", eficiente, interpretable y buen baseline para clasificación de texto con buenas características.
 * **Características de Entrada:** Embeddings reducidos a 50 dimensiones por PCA.
-* **Hiperparámetros Clave:**
-    * **`C=10.0` (`config.LOGREG_C`):** Este valor para el inverso de la fuerza de regularización fue seleccionado tras observar que ofrecía un excelente rendimiento sin sobreajuste significativo (métricas de entrenamiento, validación y evaluación muy similares y altas, ~0.94 F1-score). Un valor más alto indica menos regularización.
-    * **`class_weight='balanced'` (`config.LOGREG_CLASS_WEIGHT`):** Se utiliza para ajustar los pesos de las clases de manera inversamente proporcional a sus frecuencias. Esto es crucial dado que las categorías generadas por el clustering pueden tener un número de muestras desbalanceado. Ayuda al modelo a prestar atención adecuada a las clases menos frecuentes.
-    * **`solver='liblinear'`:** Adecuado para el tamaño del dataset y soporta regularización L1/L2 (aunque se usa L2 por defecto).
-    * **`max_iter=1000`:** Para asegurar la convergencia.
-* **Codificación de Etiquetas:** Se utiliza `sklearn.preprocessing.LabelEncoder`, ajustado únicamente con las etiquetas del conjunto de entrenamiento (`discovery`) y luego usado para transformar las etiquetas de los conjuntos de validación y evaluación.
-* **Evaluación:**
-    * Se generan reportes de clasificación completos (precisión, recall, F1-score por clase, promedios macro y ponderado, accuracy) para los conjuntos de entrenamiento, validación y evaluación.
-    * Se implementó la generación de archivos CSV con los errores de clasificación para un análisis más detallado.
-* **Resultados:** El modelo alcanzó un F1-score macro promedio de ~0.94 de forma consistente en los tres conjuntos, indicando una buena generalización y un pipeline de pseudo-etiquetado efectivo.
+* **Hiperparámetros Clave (según `config.py`):**
+    * **`LOGREG_C=1.0`:** El valor para el inverso de la fuerza de regularización (originalmente 1 en `config.py`). *Asegúrate de que este valor sea el que usaste para obtener los resultados que reportarás. Si experimentaste y 10.0 dio mejores resultados y actualizaste `config.py` a 10.0, entonces pon 10.0 aquí. Si `config.py` sigue en 1.0, usa 1.0.*
+    * **`LOGREG_CLASS_WEIGHT='balanced'`:** Para ajustar pesos de clases desbalanceadas.
+    * **`solver='liblinear'` y `max_iter=1000`:** Para asegurar la convergencia y compatibilidad.
+* **Codificación de Etiquetas:** `sklearn.preprocessing.LabelEncoder`, ajustado en `discovery`.
+* **Evaluación:** Reportes de clasificación completos y análisis de errores para todos los conjuntos.
+* **Resultados:** *Actualiza esta sección con tus métricas finales después de ejecutar el pipeline con la configuración final (ej: "El modelo alcanzó un F1-score macro promedio de ~0.9X...")*.
 
 ## 6. Proceso de Diagnóstico y Mejora (Iteraciones Clave)
 
-Es importante destacar que el alto rendimiento actual del modelo es el resultado de un proceso iterativo de diagnóstico y mejora:
+Es importante destacar que el rendimiento actual del modelo es el resultado de un proceso iterativo de diagnóstico y mejora:
 
 1.  **Resultados Iniciales Deficientes:** Las primeras ejecuciones del modelo de clasificación arrojaron F1-scores muy bajos (cercanos a 0.05) y una inconsistencia drástica entre el rendimiento en validación y evaluación para algunas clases.
 2.  **Identificación de Causa Raíz:** El análisis reveló que la causa principal de estos problemas era la **falta de consistencia en la aplicación de los transformadores (PCA y KMeans) a través de los diferentes conjuntos de datos.** Específicamente, PCA y KMeans se estaban reajustando (re-entrenando) en cada conjunto (`discovery`, `validation`, `evaluation`) por separado.
@@ -114,6 +102,6 @@ Es importante destacar que el alto rendimiento actual del modelo es el resultado
     * El modelo KMeans se ajusta **únicamente** en `discovery` (con el `k` óptimo) y se guarda. Este modelo guardado se carga para predecir clústeres en `validation` y `evaluation`.
     * El `define_category_map` se aplica de forma consistente a estas predicciones de clúster.
 4.  **Ajuste de Hiperparámetros del Clasificador:** Se experimentó con los hiperparámetros de `LogisticRegression`, especialmente `C` y `class_weight`, llegando a los valores actuales que ofrecen un buen rendimiento.
-5.  **Resultado de la Mejora:** Tras estos cambios, el rendimiento del modelo mejoró drásticamente al ~0.94 F1-score en todos los conjuntos, demostrando la importancia de un pipeline de ML consistente y correctamente implementado.
+5.  **Resultado de la Mejora:** Tras estos cambios, el rendimiento del modelo mejoró drásticamente, demostrando la importancia de un pipeline de ML consistente y correctamente implementado. *(Actualiza con tus resultados finales aquí también)*.
 
 Este proceso de depuración es una parte fundamental de la ingeniería de Machine Learning y demuestra la capacidad de identificar, diagnosticar y resolver problemas en el pipeline.
