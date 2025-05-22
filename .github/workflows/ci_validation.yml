@@ -1,0 +1,55 @@
+name: CI Code Validation & Basic Tests
+on:
+  push:
+    branches: [ main ] # O tu rama principal/de desarrollo
+  pull_request:
+    branches: [ main ] # O tu rama principal/de desarrollo
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.12'] # Especifica tu versión de Python
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4 # Usar la versión más reciente
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      - name: Lint with Flake8
+        run: |
+          pip install flake8
+          # Detener el build si hay errores de flake8 (recomendado)
+          # Ajusta las opciones de Flake8 según tus necesidades o un archivo de configuración .flake8
+          flake8 src/ --count --select=E9,F63,F7,F82 --show-source --statistics
+          # O una ejecución más simple para solo ver los errores:
+          # flake8 src/
+      # --- Implementación Puntual: Test Básico del Pipeline ---
+      # Este paso intenta ejecutar una parte del pipeline para asegurar que no hay errores de ejecución obvios.
+      # Para una prueba real, esto usaría un dataset muy pequeño y mocks.
+      # Aquí, como "implementación puntual", intentaremos correr un script clave.
+      # ¡ADVERTENCIA!: Este paso podría ser lento si descarga datos o procesa mucho.
+      # Para la prueba, considera si es viable o si solo describes los tests.
+      # Si data_ingestion.py descarga datos, este paso podría fallar si no hay credenciales de Kaggle.
+      # UNA ALTERNATIVA MÁS SEGURA EN CI ES TENER TESTS UNITARIOS MOCKEADOS.
+      # Por ahora, lo comentaré para evitar fallos inesperados en CI por dependencias externas.
+
+      # - name: (Conceptual) Run a basic pipeline script test
+      #   run: |
+      #     # Este es un ejemplo muy simplificado. En un CI real,
+      #     # se usarían datasets de prueba pequeños y mocks.
+      #     # python src/data_ingestion.py --test_mode # Si tuvieras un modo test
+      #     echo "Conceptual step: Run basic unit/integration tests here (e.g., with pytest)"
+
+      # --- (Opcional) Construir Imagen Docker como parte de CI ---
+      # Esto valida que tu Dockerfile funciona.
+      # - name: Build Docker image
+      #   run: docker build -t tweet-classifier-app:${{ github.sha }} .

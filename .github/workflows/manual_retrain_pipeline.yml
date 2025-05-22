@@ -1,0 +1,99 @@
+name: Manual Model Retraining & Evaluation Pipeline
+
+on:
+  workflow_dispatch: # Permite el disparo manual desde la pestaña "Actions" de GitHub
+    inputs:
+      log_level:
+        description: 'Log level para la ejecución del pipeline'
+        required: false
+        default: 'INFO'
+      # Podrías añadir más inputs si quieres parametrizar el reentrenamiento,
+      # ej. una URL a nuevos datos, o un tag para el modelo.
+
+jobs:
+  retrain-evaluate-and-build:
+    runs-on: ubuntu-latest
+    
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.12' 
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          # (Opcional) Descargar recursos NLTK. Es mejor si tu Dockerfile los incluye,
+          # o si tu script de preprocesamiento los descarga de forma idempotente.
+          # python -c "import nltk; nltk.download(['stopwords', 'punkt', 'wordnet', 'omw-1.4', 'averaged_perceptron_tagger'], quiet=True)"
+
+      # Paso 0: (Opcional) Descargar/Asegurar Dataset Crudo si no está en el repo
+      # Si tu data_ingestion.py maneja la descarga desde Kaggle, necesitarás secretos de Kaggle en GitHub Actions.
+      # Para esta prueba, podrías asumir que el `data/00_raw/twcs.csv` se añade al runner de alguna forma
+      # o que tu script de ingestión funciona con datos públicos sin autenticación si es posible.
+      # Si usas Kaggle API, configura KAGGLE_USERNAME y KAGGLE_KEY como secretos en GitHub Repo Settings.
+      # - name: Configure Kaggle Credentials
+      #   env:
+      #     KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+      #     KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
+      #   run: |
+      #     mkdir -p ~/.kaggle
+      #     echo '{"username":"'$KAGGLE_USERNAME'","key":"'$KAGGLE_KEY'"}' > ~/.kaggle/kaggle.json
+      #     chmod 600 ~/.kaggle/kaggle.json
+      #     echo "Kaggle credentials configured."
+
+      - name: 1. Run Data Ingestion
+        run: python src/data_ingestion.py
+        env: # Ejemplo si necesitas pasar variables de entorno a tus scripts
+          APP_LOGGING_LEVEL: ${{ github.event.inputs.log_level || 'INFO' }}
+
+      - name: 2. Run Data Preparation
+        run: python src/data_preparation.py --dataset_type all
+        env:
+          APP_LOGGING_LEVEL: ${{ github.event.inputs.log_level || 'INFO' }}
+
+      - name: 3. Run Text Preprocessing
+        run: python src/preprocessing.py --dataset_type all
+        env:
+          APP_LOGGING_LEVEL: ${{ github.event.inputs.log_level || 'INFO' }}
+
+      - name: 4. Run Feature Engineering
+        run: python src/feature_engineering.py --dataset_type all # Ajusta PCA en discovery y aplica
+        env:
+          APP_LOGGING_LEVEL: ${{ github.event.inputs.log_level || 'INFO' }}
+
+      - name: 5. Run Clustering and Pseudo-Labeling
+        run: python src/clustering.py --dataset_type all # Ajusta KMeans en discovery y aplica
+        env:
+          APP_LOGGING_LEVEL: ${{ github.event.inputs.log_level || 'INFO' }}
+          # KMEANS_N_CLUSTERS se toma de config.py, asegúrate que sea el deseado (ej. 8)
+
+      - name: 6. Run Model Training and Evaluation
+        run: python src/model_training.py
+        env:
+          APP_LOGGING_LEVEL: ${{ github.event.inputs.log_level || 'INFO' }}
+          # LOGREG_C y LOGREG_CLASS_WEIGHT se toman de config.py
+
+      - name: Build Docker image with new model (Conceptual Deployment)
+        run: |
+          docker build -t nicolastorresf/tweet_classifier_app:${{ github.run_id }} .
+          echo "Imagen Docker construida: nicolastorresf/tweet_classifier_app:${{ github.run_id }}"
+          # En un escenario real, aquí harías `docker push` a un registry (Docker Hub, ECR, GCR)
+          # echo ${{ secrets.DOCKER_HUB_TOKEN }} | docker login -u ${{ secrets.DOCKER_HUB_USERNAME }} --password-stdin
+          # docker push nicolastorresf/tweet_classifier_app:${{ github.run_id }}
+
+      - name: Upload Model and Report Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: model-artifacts-run-${{ github.run_id }}
+          path: |
+            models/classification/
+            models/clustering/
+            models/feature_reduction/
+            data/06_pseudo_labelled_data/ # Los datos finales usados para entrenar
+          retention-days: 7

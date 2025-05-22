@@ -1,0 +1,30 @@
+# Contenido de .dockerignore
+.git
+.gitignore
+.dockerignore
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache
+.venv
+venv
+env
+*.env
+local_settings.py
+*.log
+logs/
+
+# NO copiar los datos ni los modelos a la imagen Docker del pipeline.
+# Estos se manejarán externamente o se montarán como volúmenes si es necesario
+# para un entorno de producción, o se generarán dentro del contenedor durante la ejecución.
+data/
+models/
+
+# Excluir outputs de notebooks si no son necesarios en la imagen
+notebook_outputs/
+
+# Cualquier otro archivo o carpeta específica del desarrollo local
+*.DS_Store
+.vscode/
+.idea/

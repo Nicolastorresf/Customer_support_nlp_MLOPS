@@ -1,180 +1,268 @@
-# Proyecto: Clasificación de Tweets de Atención al Cliente 
+# Proyecto: Clasificación de Tweets de Atención al Cliente (MLOps Nequi)
 
 ## Autor
-* **Nombre:** Nicolas Torres
-* **Fecha:** Mayo 2025
+
+***Nombre:** Nicolas Torres
+***Fecha:** Mayo 2025
 
 ## Descripción del Proyecto
 
 Este proyecto implementa un pipeline de Machine Learning de extremo a extremo para clasificar tweets de un canal de atención al cliente. El objetivo es tomar mensajes de texto de usuarios, procesarlos a través de una serie de etapas (ingesta, preparación, preprocesamiento NLP, ingeniería de características, y pseudo-etiquetado mediante clustering) y finalmente entrenar un modelo de clasificación supervisado para asignar estos mensajes a categorías relevantes.
 
-La solución está diseñada como un sistema batch, con un fuerte énfasis en la modularidad, reproducibilidad, trazabilidad y buenas prácticas de ingeniería de Machine Learning, siguiendo los lineamientos de la prueba técnica para Ingeniero de Machine Learning de Nequi.
-
-El pipeline ha sido desarrollado en Python y utiliza diversas librerías estándar de data science y NLP.
+La solución está diseñada como un sistema batch, con un fuerte énfasis en la modularidad, reproducibilidad, trazabilidad y buenas prácticas de ingeniería de Machine Learning, siguiendo los lineamientos de la prueba técnica para Ingeniero de Machine Learning de Nequi]. El pipeline ha sido desarrollado en Python y utiliza diversas librerías estándar de data science y NLP. El código fuente se organiza en scripts modulares dentro de la carpeta `src/`, orquestados por `src/run_full_pipeline.py`. La solución también incluye contenerización con Docker y flujos de CI/CD/CT utilizando GitHub Actions.
 
 ## Dataset Utilizado
 
 * **Nombre del Dataset:** Customer Support on Twitter
-* **Fuente:** Kaggle
-* **URL/Slug en Kaggle:** `thoughtvector/customer-support-on-twitter`,'https://www.kaggle.com/datasets/thoughtvector/customer-support-on-twitter' 
+* **Fuente:** Kaggle 
+* **URL/Slug en Kaggle:** `thoughtvector/customer-support-on-twitter` (https://www.kaggle.com/datasets/thoughtvector/customer-support-on-twitter) 
 * **Archivo Principal en el Dataset:** `twcs.csv`
-* **Descripción Breve:** Este dataset público contiene más de 2 millones de tweets que representan interacciones entre clientes y múltiples compañías a través de Twitter.
-* **Filtrado Aplicado:** Para este proyecto, el dataset se filtra inicialmente para incluir únicamente los tweets entrantes de clientes (`inbound=True`), resultando en un conjunto de trabajo de aproximadamente 1.6 millones de registros, los cuales se dividen luego en conjuntos de `discovery` (entrenamiento), `validation` y `evaluation`.
+* **Descripción Breve:** Este dataset público contiene aproximadamente 3 millones de tweets que representan interacciones entre clientes y múltiples compañías a través de Twitter.
+* **Filtrado Aplicado:** Para este proyecto, el dataset se filtra inicialmente para incluir únicamente los tweets entrantes de clientes (`inbound=True`). Este subconjunto se divide luego en conjuntos de `discovery` (para entrenamiento y ajuste de modelos no supervisados), `validation` y `evaluation`.
 
 ## Estructura de Carpetas del Proyecto
 
 ```text
 customer_support_nlp_MLOPS/
-├── data/                     # Datos (IGNORADOS POR GIT gracias a .gitignore)
-│   ├── 00_raw/               # Dataset crudo original (ej. twcs.csv)
-│   ├── 01_ingested_splits/   # Splits iniciales (discovery_ingested.csv, etc.)
-│   ├── 02_prepared_data/     # Datos después de preparación básica
-│   ├── 03_preprocessed_text/ # Textos después de limpieza y preprocesamiento NLP
-│   ├── 04_features/          # Embeddings (completos y reducidos .npy) y sus IDs (.csv)
-│   ├── 05_clustering_outputs/# Asignaciones de clusters (.csv) y reportes de análisis (.txt)
-│   └── 06_pseudo_labelled_data/ # Datasets finales con pseudo-etiquetas para clasificación
-├── docs/                     # (OPCIONAL) Documentos de propuestas de diseño (.md)
-│   ├── DECISIONES_PIPELINE.md
-│   ├── PROPUESTA_ARQUITECTURA.md
-│   ├── PROPUESTA_CI_CD_CT.md
-│   ├── PROPUESTA_CALIDAD_VERSIONADO.md
-│   └── PROPUESTA_MONITOREO_SEGURIDAD.md
-├── models/                   # Modelos serializados y reportes 
-│   ├── classification/       # Modelos de clasificación, encoders, reportes, análisis de errores
-│   ├── clustering/           # Modelos KMeans ajustados 
-│   └── feature_reduction/    # Modelos PCA ajustados 
-├── notebooks/                # Jupyter notebooks para experimentación y análisis exploratorio
-│   └── Clustering_Experimentation.ipynb
-├── src/                      # Código fuente del pipeline de ML
+├── .github/                        # Workflows de GitHub Actions
+│   └── workflows/
+│       ├── ci_validation.yml       # Workflow de Integración Continua (linting, tests básicos)
+│       └── manual_retrain_pipeline.yml # Workflow de Entrenamiento Continuo (manual)
+├── data/                           # Datos (IGNORADOS POR GIT gracias a .gitignore)
+│   ├── 00_raw/                     # Dataset crudo original (ej. twcs.csv)
+│   ├── 01_ingested_splits/         # Splits iniciales (discovery_split_raw.csv, etc.)
+│   ├── 02_prepared_data/         # Datos después de preparación básica
+│   ├── 03_preprocessed_text/     # Textos después de limpieza y preprocesamiento NLP
+│   ├── 04_features/                # Embeddings (completos y reducidos .npy) y sus IDs (.csv)
+│   ├── 05_clustering_outputs/    # Asignaciones de clusters (.csv) y reportes de análisis (.txt)
+│   └── 06_pseudo_labelled_data/  # Datasets finales con pseudo-etiquetas para clasificación
+├── docs/                           # Documentos de propuestas de diseño y decisiones
+│   ├── ARQUITECTURA_NUBE.md        # Propuesta de Arquitectura en la Nube y Orquestación
+│   ├── PIPELINE_DATOS_MODELO.md    # Decisiones sobre el pipeline de datos y modelo
+│   ├── CI_CD_CT.md                 # Detalles del pipeline de CI/CD/CT
+│   └── MONITOREO_SEGURIDAD.md      # Propuesta de Monitoreo y Seguridad
+├── models/                         # Modelos serializados y reportes
+│   ├── classification/             # Modelos de clasificación, encoders, reportes, análisis de errores
+│   ├── clustering/                 # Modelos KMeans ajustados
+│   └── feature_reduction/          # Modelos PCA ajustados
+├── notebooks/                      # Jupyter notebooks para experimentación y análisis exploratorio
+│   └── Clustering_Experimentation.ipynb # Notebook de ejemplo para k-means
+├── src/                            # Código fuente del pipeline de ML
 │   ├── __init__.py
 │   ├── all_emoticons_expanded.py # Módulo de utilidad para emojis
-│   ├── chat_words.py         # Módulo de utilidad para abreviaturas de chat
-│   ├── clustering.py         # Lógica de clustering (KMeans) y pseudo-etiquetado
-│   ├── config.py             # Archivo de configuración centralizado (rutas, parámetros)
-│   ├── data_ingestion.py     # Script para descarga y división inicial de datos
-│   ├── data_preparation.py   # Script para preparación básica de datos
-│   ├── feature_engineering.py# Script para generación de embeddings y reducción de dimensionalidad
-│   ├── model_training.py     # Script para entrenamiento y evaluación del modelo de clasificación
-│   └── preprocessing.py      # Script para limpieza y preprocesamiento de texto NLP
-├── .gitignore                # Especifica los archivos y directorios a ignorar por Git
-├── README.md                 # Este archivo
-└── requirements.txt          # Dependencias del proyecto Python
-## Prerrequisitos```
+│   ├── chat_words.py             # Módulo de utilidad para abreviaturas de chat
+│   ├── clustering.py             # Lógica de clustering (KMeans) y pseudo-etiquetado
+│   ├── config.py                 # Archivo de configuración centralizado
+│   ├── data_ingestion.py         # Script para descarga y división inicial de datos
+│   ├── data_preparation.py       # Script para preparación básica de datos
+│   ├── feature_engineering.py    # Script para generación de embeddings y reducción de dimensionalidad
+│   ├── model_training.py         # Script para entrenamiento y evaluación del modelo de clasificación
+│   ├── preprocessing.py          # Script para limpieza y preprocesamiento de texto NLP
+│   └── run_full_pipeline.py      # Script principal para orquestar todo el pipeline
+├── .dockerignore                   # Especifica archivos a ignorar por Docker en el build
+├── .gitignore                      # Especifica archivos y directorios a ignorar por Git
+├── Dockerfile                      # Define la imagen Docker para el pipeline
+├── README.md                       # Este archivo
+└── requirements.txt                # Dependencias del proyecto Python
+```
 
-* Python 3.10 (o la versión que estés usando)
+## Prerrequisitos
+
+* Python 3.12 (la versión utilizada para desarrollo y pruebas)
 * Git
+* Docker (para construir y ejecutar la imagen del pipeline)
 * (Recomendado) Un entorno virtual para gestionar las dependencias del proyecto:
-    * Para crear un entorno (ej. llamado `nequi_env`):
-      ```bash
-      python -m venv nequi_env
-      ```
-    * Para activar el entorno:
-      * En Windows (Git Bash o CMD/Powershell):
-        ```bash
-        nequi_env\Scripts\activate
-        ```
-      * En Linux/macOS:
-        ```bash
-        source nequi_env/bin/activate
-        ```
+
+* Para crear un entorno (ej. llamado `nequi_env`):
+
+```bash
+        python -m venv nequi_env
+```
+
+***Para activar el entorno:**
+
+***En Windows (Git Bash o CMD/Powershell):**
+
+```bash
+            nequi_env\Scripts\activate```
+#**En Linux/macOS:**
+
+```bash
+            source nequi_env/bin/activate
+            ```
 
 ## Instalación de Dependencias
 
 Una vez clonado el repositorio y con el entorno virtual activado (si se usa), instala todas las dependencias necesarias ejecutando el siguiente comando en la raíz del proyecto:
 
-bash
+```bash
 pip install -r requirements.txt
-````
+```
+
 ## Configuración
 
-El pipeline es altamente configurable a través del archivo `src/config.py`. Este archivo centraliza:
+El pipeline es altamente configurable a través del archivo src/config.py. Este archivo centraliza:
+     *Rutas a los datos de entrada y salida para cada etapa del pipeline (con soporte para ejecución local o S3 basado en variables de entorno).
+     *Nombres de columnas clave.
+     *Parámetros para la ingeniería de características (modelo Sentence Transformers, componentes PCA).
+     *Parámetros para el clustering (número de clústeres KMeans, métodos de inicialización).
+     *Hiperparámetros para el modelo de clasificación (Regresión Logística: LOGREG_C = 1, LOGREG_CLASS_WEIGHT = 'balanced').
+     *Configuración de logging, preprocesamiento y división de datos.
 
-* Rutas a los datos de entrada y salida para cada etapa del pipeline.
-* Nombres de columnas clave utilizados consistentemente a través de los scripts.
-* Parámetros para la ingeniería de características, como el modelo de Sentence Transformers a utilizar (`SENTENCE_TRANSFORMER_MODEL`) y el número de componentes para PCA (`PCA_N_COMPONENTS`).
-* Parámetros para el clustering, incluyendo el número de clústeres para KMeans (`KMEANS_N_CLUSTERS`) y sus métodos de inicialización.
-* Hiperparámetros para el modelo de clasificación (Regresión Logística: `LOGREG_C`, `LOGREG_CLASS_WEIGHT`).
-* Configuración global de logging para trazabilidad.
+## Antes de la primera ejeción, considera lo siguiente
 
-**Antes de la primera ejecución, considera lo siguiente:**
+ 1.**Dataset de Kaggle:**
 
-1.  **Dataset de Kaggle:**
-    * El script `src/data_ingestion.py` está configurado para intentar descargar el dataset `thoughtvector/customer-support-on-twitter` desde Kaggle utilizando `kagglehub`. Esto requiere que tengas tus credenciales de API de Kaggle configuradas en tu sistema (generalmente un archivo `kaggle.json` en `~/.kaggle/` en Linux/macOS o `C:\Users\<Usuario>\.kaggle\` en Windows, o mediante variables de entorno `KAGGLE_USERNAME` y `KAGGLE_KEY`).
-    * **Alternativa Manual:** Si prefieres no usar la descarga automática o tienes problemas con ella, puedes descargar manualmente el archivo `twcs.csv` del dataset desde la página de Kaggle y colocarlo directamente en la carpeta `data/00_raw/` de este proyecto antes de ejecutar el pipeline. El script de ingestión lo detectará y procederá con la división.
+*El script src/data_ingestion.py intentará descargar el dataset thoughtvector/customer-support-on-twitter desde Kaggle usando kagglehub. Esto requiere credenciales de API de Kaggle configuradas (kaggle.json o variables de entorno KAGGLE_USERNAME/KAGGLE_KEY).
 
-2.  **Revisar `src/config.py` (Valores Clave):**
-    * **`KMEANS_N_CLUSTERS`**: Este valor (actualmente configurado a `8` por defecto en el script `config.py` que proporcionaste) es crucial para el proceso de pseudo-etiquetado y define el número de categorías temáticas que se intentarán descubrir. Se determinó mediante experimentación documentada en el notebook `notebooks/Clustering_Experimentation.ipynb` (utilizando métricas como el método del codo y el coeficiente de silueta). Si deseas cambiar el número de categorías finales, este es el parámetro principal a modificar, y se recomienda re-ejecutar la experimentación de clustering para validar el nuevo `k`.
-    * **`LOGREG_C` y `LOGREG_CLASS_WEIGHT`**: Estos son los hiperparámetros para el modelo de Regresión Logística. Los valores actuales (`C=10.0`, `class_weight='balanced'`) fueron seleccionados tras iteraciones que demostraron un buen rendimiento y generalización, como se evidencia en los resultados del modelo.
+* **Alternativa Manual:** Puedes descargar twcs.csv manualmente desde Kaggle y colocarlo en data/00_raw/ antes de ejecutar el pipeline.
 
-## Cómo Ejecutar el Pipeline Completo
+2.**Revisar `src/config.py` (Valores Clave):**
 
-Los scripts del pipeline están diseñados para ser ejecutados en secuencia desde la raíz del proyecto. Cada script toma la salida del anterior, procesa los datos y guarda sus resultados para la siguiente etapa. La mayoría de los scripts que operan sobre los diferentes conjuntos de datos (`data_preparation.py`, `preprocessing.py`, `feature_engineering.py`, `clustering.py`) aceptan el argumento `--dataset_type` con las opciones `discovery`, `validation`, `evaluation`, o `all` (para procesar todos los conjuntos aplicables en el orden correcto).
+* **`KMEANS_N_CLUSTERS`**: Actualmente configurado a `8` por defecto. Este valor es crucial para el pseudo-etiquetado y define el número de categorías temáticas. Se recomienda determinarlo mediante experimentación (ej. `notebooks/Clustering_Experimentation.ipynb`).
+* **Otras Configuraciones**: Revisa las variables en `src/config.py` para ajustar el comportamiento de los diferentes módulos del pipeline según sea necesario (ej., rutas, modelo de embedding, parámetros de NLTK, etc.).
 
-**Orden de Ejecución Recomendado:**
+## Ejecución del Pipeline
 
-Para asegurar la consistencia (especialmente que los modelos de PCA y KMeans se ajusten solo con datos de `discovery` y se apliquen a los demás), se recomienda el siguiente orden:
+**Opción 1:** Ejecución Completa Orquestada
+Se ha provisto un script principal src/run_full_pipeline.py que ejecuta todas las etapas del pipeline en la secuencia correcta. Este es el método recomendado para una ejecución completa.
 
-1.  **Paso 1: Ingestión de Datos**
-    * **Acción:** Descarga (si es necesario) el dataset crudo desde Kaggle y lo divide en los conjuntos iniciales `discovery`, `validation`, y `evaluation`.
-    * **Comando:**
-        ```bash
-        python src/data_ingestion.py
-        ```
-    * **Salida:** Archivos `.csv` (ej. `discovery_ingested.csv`) en la carpeta `data/01_ingested_splits/`.
+```bash
+     python src/run_full_pipeline.py
+```
 
-2.  **Paso 2: Preparación de Datos**
-    * **Acción:** Realiza limpieza básica de datos, conversión de tipos y creación de características iniciales (como `tweet_length`).
-    * **Comando:**
-        ```bash
-        python src/data_preparation.py --dataset_type all
-        ```
-    * **Salida:** Archivos `.csv` (ej. `discovery_prepared.csv`) en la carpeta `data/02_prepared_data/`.
+o como módulo:
 
-3.  **Paso 3: Preprocesamiento de Texto NLP**
-    * **Acción:** Aplica un conjunto exhaustivo de técnicas de limpieza de texto y normalización lingüística, incluyendo manejo de múltiples idiomas.
-    * **Comando:**
-        ```bash
-        python src/preprocessing.py --dataset_type all
-        ```
-    * **Salida:** Archivos `.csv` (ej. `discovery_preprocessed.csv`) con el texto limpio en `data/03_preprocessed_text/`.
+```bash
+    python -m src.run_full_pipeline
+```
 
-4.  **Paso 4: Ingeniería de Características**
-    * **Acción:** Genera embeddings de texto usando un modelo pre-entrenado de Sentence Transformers y luego aplica reducción de dimensionalidad mediante PCA.
-    * **Comando:**
-        ```bash
-        python src/feature_engineering.py --dataset_type all
-        ```
-    * **Importante:** El modelo PCA se ajusta **únicamente** con los datos de `discovery` y se guarda. Este mismo modelo PCA ajustado se utiliza luego para transformar los datos de `discovery`, `validation`, y `evaluation`, asegurando consistencia.
-    * **Salida:** Embeddings completos y reducidos (`.npy`) y sus IDs (`.csv`) en `data/04_features/`. El objeto del modelo PCA ajustado (`.joblib`) se guarda en `models/feature_reduction/`.
+***Este script se encargará de:**
 
-5.  **Paso 5: Clustering y Pseudo-Etiquetado**
-    * **Acción:** Aplica el algoritmo KMeans a los embeddings reducidos para agrupar los tweets en clústeres temáticos. Luego, asigna etiquetas de categoría legibles a estos clústeres basándose en un mapeo manual definido (ver `define_category_map()` en `src/clustering.py`).
-    * **Nota:** El número de clústeres (`k`) para KMeans se define en `src/config.py` (variable `KMEANS_N_CLUSTERS`), idealmente determinado a través del análisis en `notebooks/Clustering_Experimentation.ipynb`.
-    * **Comando:**
-        ```bash
-        python src/clustering.py --dataset_type all
-        ```
-    * **Importante:** El modelo KMeans se ajusta **únicamente** con los datos (embeddings reducidos) de `discovery` y se guarda. Este mismo modelo KMeans ajustado se utiliza para predecir los clústeres para los conjuntos `discovery`, `validation`, y `evaluation`.
-    * **Salida:** Archivos con las asignaciones de clúster (`.csv`) en `data/05_clustering_outputs/`. Los datasets finales pseudo-etiquetados (`.csv`) se guardan en `data/06_pseudo_labelled_data/`. El objeto del modelo KMeans ajustado (`.joblib`) se guarda en `models/clustering/`.
+1.Ingestión de datos.
+2.Preparación de datos para los conjuntos discovery, validation y evaluation.
+3.Preprocesamiento de texto NLP para todos los conjuntos.
+4.Ingeniería de características (ajustando PCA en discovery y aplicándolo a los demás).
+5.Clustering y pseudo-etiquetado (ajustando KMeans en discovery y aplicándolo a los demás, generando pseudo-etiquetas).
+7.Entrenamiento y evaluación del modelo de clasificación.
 
-6.  **Paso 6: Entrenamiento y Evaluación del Modelo de Clasificación**
-    * **Acción:** Entrena un modelo de Regresión Logística utilizando los datos pseudo-etiquetados del conjunto `discovery` y lo evalúa en los conjuntos de entrenamiento, validación y evaluación final.
-    * **Comando:**
-        ```bash
-        python src/model_training.py
-        ```
-    * **Salida:** El modelo de clasificación entrenado y el `LabelEncoder` correspondiente (`.joblib`) se guardan en `models/classification/`. Los reportes de clasificación detallados (`.txt`) y los archivos CSV con el análisis de errores para cada conjunto de datos también se guardan en esta carpeta.
+**Opción 1:** Ejecución Individual de Scripts (Para Debugging o Pasos Específicos)
+Si necesitas ejecutar una etapa específica o depurar, puedes ejecutar los scripts individuales. La mayoría aceptan el argumento --dataset_type (discovery, validation, evaluation, o all). Es crucial ejecutar los pasos en orden y asegurar que discovery se procese primero para etapas que ajustan modelos (PCA, KMeans).
+
+1.Ingestión de Datos:
+
+```Bash
+python src/data_ingestion.py
+```
+
+2.**Preparación de Datos:**
+
+```Bash
+python src/data_preparation.py --dataset_type all
+```
+
+3.**Preprocesamiento de Texto NLP:**
+
+```Bash
+python src/preprocessing.py --dataset_type all
+```
+
+4.**Ingeniería de Características:**
+
+```Bash
+python src/feature_engineering.py --dataset_type all
+```
+
+(PCA se ajusta en discovery y se aplica al resto)
+
+5.**Clustering y Pseudo-Etiquetado:**
+
+```Bash
+python src/clustering.py --dataset_type all
+```
+
+(KMeans se ajusta en discovery y se aplica al resto)
+
+6.**Entrenamiento y Evaluación del Modelo:**
+
+```Bash
+python src/model_training.py
+```
+
+## Contenerización con Docker
+
+El proyecto incluye un Dockerfile para construir una imagen Docker que contiene el pipeline y sus dependencias.
+
+1.**Construir la Imagen:**
+Desde la raíz del proyecto, ejecuta:
+
+```Bash
+
+docker build -t nequi_mlops_pipeline .
+```
+
+(Puedes cambiar nequi_mlops_pipeline por el nombre y etiqueta que prefieras).
+
+2.**Ejecutar el Pipeline dentro del Contenedor:**
+
+Una vez construida la imagen, puedes ejecutar el pipeline completo dentro del contenedor:
+
+```Bash
+docker run --rm nequi_mlops_pipeline
+```
+
+El ENTRYPOINT del Dockerfile está configurado para ejecutar python src/run_full_pipeline.py.
+
+* Si necesitas mapear volúmenes para persistir los datos o modelos generados fuera del contenedor, o pasar variables de entorno, puedes hacerlo con las opciones de docker run. Por ejemplo, para guardar la carpeta data y models en tu host:
+
+```Bash
+
+docker run --rm \
+  -v $(pwd)/data:/app/data \
+  -v $(pwd)/models:/app/models \
+  nequi_mlops_pipeline
+```
+
+* Asegúrate de que las rutas en src/config.py sean relativas al WORKDIR (/app) o configurables mediante variables de entorno para que funcionen correctamente dentro del contenedor. El config.py actual ya soporta variables de entorno para rutas base.
+
+## CI/CD/CT con GitHub Actions
+
+El repositorio está configurado con los siguientes workflows de GitHub Actions (ver carpeta .github/workflows/):
+
+1. ci_validation.yml (Integración Continua):
+
+* Disparador: Se ejecuta en cada push o pull_request a la rama main (o tu rama principal).
+
+* Acciones:
+  * Realiza checkout del código.
+  * Configura el entorno Python (versión 3.12).
+  * Instala las dependencias desde requirements.txt.
+  * Ejecuta un linter (Flake8) para verificar la calidad del código en src/.
+  * (Conceptual) Podría extenderse para ejecutar pruebas unitarias/integración y construir    la imagen Docker para validación.
+
+2. manual_retrain_pipeline.yml (Entrenamiento y "Despliegue" Continuo Manual):
+
+* Disparador: Se ejecuta manualmente desde la pestaña "Actions" del repositorio en GitHub (workflow_dispatch). Permite ingresar el log_level como parámetro.
+
+* Acciones:
+* Realiza checkout del código.
+* Configura el entorno Python e instala dependencias.
+* (Opcional) Puede configurarse con secretos de Kaggle para la descarga automática de datos.
+* Ejecuta la secuencia completa de scripts del pipeline (Ingestión, Preparación,  Preprocesamiento, Ing. Características, Clustering, Entrenamiento del Modelo) utilizando los scripts de src/ (similar a run_full_pipeline.py pero directamente en el workflow).
+*Construye una nueva imagen Docker con el código y los modelos/datos actualizados, etiquetándola con el github.run_id.
+* Sube los artefactos generados (modelos, datos pseudo-etiquetados, reportes) a GitHub Actions para su inspección o descarga.
+* Propósito: Este workflow sirve como un mecanismo para reentrenar el modelo con la última versión del código (y potencialmente nuevos datos si data_ingestion.py se adapta para ello) y empaquetar la solución actualizada.
 
 ## Resultados del Modelo de Clasificación
 
 Tras la ejecución completa del pipeline con las configuraciones actuales (Regresión Logística con `C=10.0` y `class_weight='balanced'` según `src/config.py`, sobre embeddings reducidos a 50 dimensiones por PCA), el modelo demostró un rendimiento robusto y consistente:
-````
+
+````bash
 | Conjunto de Datos       | Accuracy | Macro Avg F1-score | Weighted Avg F1-score |
 |-------------------------|----------|--------------------|-----------------------|
 | Entrenamiento (`discovery`) | ~0.94    | ~0.94              | ~0.94                 |
 | Validación (`validation`)  | ~0.94    | ~0.94              | ~0.94                 |
 | Evaluación (`evaluation`)  | ~0.94    | ~0.94              | ~0.94                 |
 ````
-El rendimiento es notablemente similar a través de todos los conjuntos, lo que indica una buena capacidad de generalización del modelo y la ausencia de un sobreajuste significativo a los datos de entrenamiento. Esta consistencia subraya la efectividad del pipeline de preprocesamiento, ingeniería de características y pseudo-etiquetado implementado.
 
-Los reportes de clasificación detallados por clase, así como los archivos CSV que contienen un análisis de los errores de clasificación específicos para cada conjunto, se encuentran disponibles en la carpeta `models/classification/` para una inspección más profunda.
+El rendimiento es notablemente similar a través de todos los conjuntos, lo que indica una buena capacidad de generalización del modelo y la ausencia de un sobreajuste significativo a los datos de entrenamiento. Esta consistencia subraya la efectividad del pipeline de preprocesamiento, ingeniería de características y pseudo-etiquetado implementado.
