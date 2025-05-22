@@ -1,6 +1,6 @@
 # 🧠 Clasificación Automatizada de Mensajes de Atención al Cliente | MLOps NLP
 
-## 📌 Resumen Ejecutivo
+## 📌 Resumen 
 
 Este proyecto implementa un sistema completo de Machine Learning en batch para clasificar mensajes de texto enviados por usuarios a un canal de atención al cliente. A través de técnicas modernas de NLP y MLOps, se construyó un pipeline modular, escalable y reproducible que cubre todas las etapas del ciclo de vida de un modelo: desde la ingesta de datos hasta el despliegue en un entorno de producción basado en la nube.
 
@@ -123,8 +123,6 @@ Se propone una estrategia basada en:
 ## 📝 Contribuciones & Licencia
 
 Este repositorio fue desarrollado como una prueba técnica individual. Puedes usarlo como base para proyectos reales o educativos.
-
-> 📬 Contacto: [Tu correo o LinkedIn, opcional]
 
 ---
 
