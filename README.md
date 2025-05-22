@@ -72,7 +72,7 @@ Este repositorio incluye dos workflows:
 - **`ci_validation.yml`**: Valida código automáticamente con Flake8 en cada push/pull_request a `main`.
 - **`manual_retrain_pipeline.yml`**: Permite reentrenar todo el sistema y construir una imagen Docker lista para despliegue.
 
-> Más detalles en [`docs/CI_CD_CT.md`](docs/CI_CD_CT.md)
+> Más detalles en [`docs/CI_CD_CT.md`](docs/CI_CD_CT.MD)
 
 ---
 
