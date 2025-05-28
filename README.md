@@ -32,6 +32,18 @@ Este proyecto implementa un sistema completo de Machine Learning en batch para c
 
 ---
 
+## 🔮 Investigaciones Futuras y Mejoras Técnicas
+
+A futuro, se planea enriquecer el modelo de clasificación mediante:
+
+- **Integración de LDA + BERT** para mejorar el pseudo-etiquetado con mayor coherencia semántica.
+- **Uso de Bi-LSTM sobre embeddings de BERT**, entrenado con las etiquetas generadas o etiquetas humanas, como modelo supervisado más expresivo.
+- **Fine-tuning conjunto BERT + Bi-LSTM** para maximizar rendimiento si se cuenta con capacidad de cómputo (ej. SageMaker o GPU).
+
+Estas estrategias apuntan a mejorar la clasificación de tweets en escenarios de soporte al cliente, donde el contexto y la secuencia importan.
+
+---
+
 ## 📁 Estructura del Proyecto
 
 ```text

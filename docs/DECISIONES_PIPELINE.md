@@ -42,7 +42,7 @@ Se implementó un pipeline de preprocesamiento de texto robusto y multilingüe c
     * **Justificación:** Modelo pre-entrenado y multilingüe que captura significado semántico a nivel de oración, eficiente y con buen equilibrio rendimiento/tamaño.
 * **Reducción de Dimensionalidad (PCA):**
     * **Técnica:** Análisis de Componentes Principales (PCA) de `scikit-learn`.
-    * **Número de Componentes (`config.PCA_N_COMPONENTS`):** Configurado a `50`. Esta elección se basó en la necesidad de reducir significativamente la dimensionalidad de los embeddings (originalmente 384D) para mejorar la eficiencia computacional del clustering y el entrenamiento del clasificador, manteniendo al mismo tiempo suficiente información para la separación de clases temáticas. *Si tienes la cifra de varianza explicada del notebook o de la ejecución del pipeline, añádela aquí (ej: "logrando explicar aproximadamente X% de la varianza").*
+    * **Número de Componentes (`config.PCA_N_COMPONENTS`):** Configurado a `50`. Esta elección se basó en la necesidad de reducir significativamente la dimensionalidad de los embeddings (originalmente 384D) para mejorar la eficiencia computacional del clustering y el entrenamiento del clasificador, manteniendo al mismo tiempo suficiente información para la separación de clases temáticas. 
     * **Justificación:** Reducir costo computacional, eliminar ruido/redundancia y mitigar la "maldición de la dimensionalidad".
     * **Consistencia:** El modelo PCA se ajusta **únicamente** con los embeddings del conjunto `discovery` y se guarda, aplicándose luego a todos los conjuntos (`discovery`, `validation`, `evaluation`).
 * **Guardado de Artefactos:** Se guardan embeddings completos, reducidos, IDs y el modelo PCA.
@@ -82,12 +82,12 @@ Dado que el dataset original no venía con categorías de atención al cliente p
     * **Justificación:** Cumple con el requisito de "modelo básico", eficiente, interpretable y buen baseline para clasificación de texto con buenas características.
 * **Características de Entrada:** Embeddings reducidos a 50 dimensiones por PCA.
 * **Hiperparámetros Clave (según `config.py`):**
-    * **`LOGREG_C=1.0`:** El valor para el inverso de la fuerza de regularización (originalmente 1 en `config.py`). *Asegúrate de que este valor sea el que usaste para obtener los resultados que reportarás. Si experimentaste y 10.0 dio mejores resultados y actualizaste `config.py` a 10.0, entonces pon 10.0 aquí. Si `config.py` sigue en 1.0, usa 1.0.*
+    * **`LOGREG_C=1.0`:** El valor para el inverso de la fuerza de regularización (originalmente 1 en `config.py`). 
     * **`LOGREG_CLASS_WEIGHT='balanced'`:** Para ajustar pesos de clases desbalanceadas.
     * **`solver='liblinear'` y `max_iter=1000`:** Para asegurar la convergencia y compatibilidad.
 * **Codificación de Etiquetas:** `sklearn.preprocessing.LabelEncoder`, ajustado en `discovery`.
 * **Evaluación:** Reportes de clasificación completos y análisis de errores para todos los conjuntos.
-* **Resultados:** *Actualiza esta sección con tus métricas finales después de ejecutar el pipeline con la configuración final (ej: "El modelo alcanzó un F1-score macro promedio de ~0.9X...")*.
+* **Resultados:** 94% de precisión.
 
 ## 6. Proceso de Diagnóstico y Mejora (Iteraciones Clave)
 
@@ -102,6 +102,6 @@ Es importante destacar que el rendimiento actual del modelo es el resultado de u
     * El modelo KMeans se ajusta **únicamente** en `discovery` (con el `k` óptimo) y se guarda. Este modelo guardado se carga para predecir clústeres en `validation` y `evaluation`.
     * El `define_category_map` se aplica de forma consistente a estas predicciones de clúster.
 4.  **Ajuste de Hiperparámetros del Clasificador:** Se experimentó con los hiperparámetros de `LogisticRegression`, especialmente `C` y `class_weight`, llegando a los valores actuales que ofrecen un buen rendimiento.
-5.  **Resultado de la Mejora:** Tras estos cambios, el rendimiento del modelo mejoró drásticamente, demostrando la importancia de un pipeline de ML consistente y correctamente implementado. *(Actualiza con tus resultados finales aquí también)*.
+5.  **Resultado de la Mejora:** Tras estos cambios, el rendimiento del modelo mejoró drásticamente, demostrando la importancia de un pipeline de ML consistente y correctamente implementado. 
 
 Este proceso de depuración es una parte fundamental de la ingeniería de Machine Learning y demuestra la capacidad de identificar, diagnosticar y resolver problemas en el pipeline.
